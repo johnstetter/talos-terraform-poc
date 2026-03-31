@@ -49,9 +49,39 @@ All terraform commands run from the `terraform/` directory automatically.
 The project includes automation scripts in `scripts/`:
 
 - **`setup-proxmox-permissions.sh`** - Automatically creates Proxmox user, role, and API token
-- **`cleanup-proxmox-permissions.sh`** - Removes all Terraform-related permissions
+- **`cleanup-proxmox-permissions.sh`** - Removes all Terraform-related permissions  
+- **`setup-gitlab-runner.sh`** - Installs and configures GitLab Runner with security hardening
 
-These eliminate the need for manual UI-based permission setup.
+These eliminate the need for manual UI-based permission setup and enable secure CI/CD automation.
+
+## GitLab CI/CD Pipeline
+
+The project uses GitLab CI/CD with self-hosted runners for secure deployment to local Proxmox infrastructure.
+
+### Pipeline Architecture
+
+- **GitLab CI/CD** (cloud) triggers pipelines based on merge requests and main branch pushes
+- **Self-hosted GitLab Runner** on core.rsdn.io (192.168.1.5) executes jobs locally
+- **Security controls** prevent external forks from executing arbitrary code
+- **Manual approval gates** protect production deployments
+
+### Environment Configuration
+
+- **Development**: `talos-dev` @ 192.168.1.181 - 1 control + 2 workers (automatic on MR)
+- **Production**: `talos-prod` @ 192.168.1.180 - 2 control + 3 workers (manual approval)
+
+### Security Features
+
+- **Fork MR Protection**: External merge requests require manual approval before pipeline execution
+- **Environment Gating**: Production deployments require explicit approval
+- **Runner Isolation**: Dedicated `gitlab-runner` user with systemd security hardening
+- **Network Security**: Runner only accessible from local network infrastructure
+
+### Key Files
+
+- **`.gitlab-ci.yml`**: Pipeline configuration with security rules and job definitions
+- **`docs/gitlab-ci-setup.md`**: Complete setup and configuration guide
+- **`scripts/setup-gitlab-runner.sh`**: Automated runner installation and hardening
 
 ## Configuration Architecture
 
