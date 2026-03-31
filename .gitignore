@@ -1,0 +1,171 @@
+# Terraform Files
+#################################################
+
+# Local .terraform directories
+**/.terraform/*
+
+# Terraform state files - NEVER commit these
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Exclude all .tfvars files, which may contain sensitive data
+*.tfvars
+*.tfvars.json
+
+# Ignore override files as they are usually used to override resources locally
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform plan files
+*.tfplan
+
+# Include tfplan files you may want to commit (uncomment if needed)
+# !example.tfplan
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+
+# Lock file (uncomment if you want to ignore it - many prefer to commit it)
+# .terraform.lock.hcl
+
+
+# Talos Configuration Files
+#################################################
+
+# Talos client configuration (contains cluster credentials)
+talosconfig
+
+# Generated Talos machine configurations (often contain secrets)
+controlplane.yaml
+worker.yaml
+cluster.yaml
+
+# Talos patch files that might contain sensitive data
+*-patch.yaml
+patches/
+
+# Generated kubeconfig files
+kubeconfig
+*.kubeconfig
+
+# Talos machine configuration templates with secrets
+machine-*.yaml
+
+
+# Kubernetes & Helm Files
+#################################################
+
+# Helm charts dependencies
+charts/*/charts/
+
+# Helm values files that might contain secrets
+values-*.yaml
+*-values.yaml
+secrets.yaml
+
+# Generated kubernetes manifests
+manifests/
+generated/
+
+
+# Security & Secrets
+#################################################
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Certificate and key files
+*.key
+*.crt
+*.pem
+*.p12
+*.pfx
+
+# SSH keys
+id_rsa
+id_ed25519
+*.pub
+
+# GPG keys
+*.gpg
+*.asc
+
+# Secrets directories
+secrets/
+certs/
+keys/
+
+
+# Development Environment
+#################################################
+
+# Devbox
+.devbox/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+tmp/
+temp/
+
+
+# Logs
+#################################################
+
+# Application logs
+*.log
+logs/
+log/
+
+# Debug files
+debug.log
+debug-*.log
+
+
+# Backup Files
+#################################################
+
+# Various backup files
+*.bak
+*.backup
+*.old
+*~
+
+
+# Project Specific
+#################################################
+
+# Add any project-specific files here
+# local/
+# testing/
+
+# Uncomment if you have local development overrides
+# docker-compose.override.yml
+# local.yml
