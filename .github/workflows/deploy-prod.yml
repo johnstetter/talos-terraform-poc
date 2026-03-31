@@ -1,0 +1,145 @@
+name: Deploy Production Environment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/**'
+      - 'scripts/**'
+
+jobs:
+  plan-prod:
+    runs-on: [self-hosted, linux, homelab]
+    environment: production
+
+    outputs:
+      plan-artifact: terraform-plan-prod-${{ github.run_number }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify runner environment
+        run: |
+          echo "Runner: $(hostname)"
+          echo "User: $(whoami)"
+          echo "Working directory: $(pwd)"
+
+      - name: Setup SSH agent
+        run: |
+          eval $(ssh-agent -s)
+          ssh-add /home/github-runner/.ssh/id_ed25519
+          ssh-add -L
+
+      - name: Setup Devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
+        with:
+          project-path: .
+
+      - name: Configure Terraform for Prod
+        run: |
+          cd terraform
+          cp terraform.tfvars.prod.example terraform.tfvars
+
+      - name: Terraform Plan (Prod)
+        run: |
+          devbox run init
+          devbox run plan
+        env:
+          TF_VAR_proxmox_endpoint: "https://192.168.1.5:8006/"
+          TF_VAR_proxmox_api_token: ${{ secrets.PROXMOX_API_TOKEN }}
+          TF_VAR_proxmox_ssh_username: "root"
+          TF_VAR_talos_cluster_name: "talos-prod"
+          TF_VAR_cluster_vip: "192.168.1.180"
+
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-prod-${{ github.run_number }}
+          path: |
+            terraform/plan.pln
+            terraform/.terraform.lock.hcl
+          retention-days: 30
+
+  deploy-prod:
+    runs-on: [self-hosted, linux, homelab]
+    environment:
+      name: production
+      url: https://192.168.1.180:6443
+    needs: plan-prod
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH agent
+        run: |
+          eval $(ssh-agent -s)
+          ssh-add /home/github-runner/.ssh/id_ed25519
+          ssh-add -L
+
+      - name: Setup Devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
+        with:
+          project-path: .
+
+      - name: Download Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.plan-prod.outputs.plan-artifact }}
+          path: terraform/
+
+      - name: Configure Terraform for Prod
+        run: |
+          cd terraform
+          cp terraform.tfvars.prod.example terraform.tfvars
+
+      - name: Deploy Cluster
+        run: |
+          cd terraform
+          terraform apply plan.pln
+        env:
+          TF_VAR_proxmox_endpoint: "https://192.168.1.5:8006/"
+          TF_VAR_proxmox_api_token: ${{ secrets.PROXMOX_API_TOKEN }}
+          TF_VAR_proxmox_ssh_username: "root"
+          TF_VAR_talos_cluster_name: "talos-prod"
+          TF_VAR_cluster_vip: "192.168.1.180"
+
+      - name: Extract Cluster Credentials
+        run: |
+          cd terraform
+          terraform output -raw talos_config > ../talosconfig
+          terraform output -raw kubeconfig > ../kubeconfig
+
+      - name: Validate Cluster Health
+        run: |
+          export TALOSCONFIG=./talosconfig
+          export KUBECONFIG=./kubeconfig
+
+          # Wait for cluster to be ready
+          sleep 60
+
+          # Basic health checks
+          devbox run talosctl health --wait-timeout=5m
+          devbox run kubectl get nodes
+          devbox run kubectl get pods --all-namespaces
+
+      - name: Upload Cluster Credentials
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluster-credentials-prod-${{ github.run_number }}
+          path: |
+            talosconfig
+            kubeconfig
+          retention-days: 7
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 Production Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Cluster:** talos-prod" >> $GITHUB_STEP_SUMMARY
+          echo "**API Endpoint:** https://192.168.1.180:6443" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Time:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Cluster credentials available in artifacts." >> $GITHUB_STEP_SUMMARY
