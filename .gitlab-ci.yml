@@ -1,0 +1,221 @@
+# GitLab CI/CD Pipeline for Talos Terraform PoC
+# Secure deployment to local Proxmox infrastructure with self-hosted runners
+
+# Pipeline variables (set at group/project level):
+#   PROXMOX_API_TOKEN - Proxmox API token for Terraform (terraform@pve!terraform=SECRET)
+#   TF_VAR_proxmox_endpoint - Proxmox endpoint URL
+
+stages:
+  - plan-dev
+  - deploy-prod
+
+# Default configuration for all jobs
+default:
+  tags:
+    - homelab
+    - linux
+    - proxmox
+  before_script:
+    - echo "Job running on $(hostname) as $(whoami)"
+    - pwd
+    - ls -la
+
+# Security: Only run pipelines from internal project or approved external MRs
+workflow:
+  rules:
+    # Allow pipelines for merge requests from internal project
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH == $CI_PROJECT_PATH
+    # Require manual approval for external merge requests
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH != $CI_PROJECT_PATH
+      when: manual
+    # Allow pipelines for main branch pushes
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    # Allow manual pipeline runs
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+# ============================================================================
+# Development Environment Planning (Runs on MRs)
+# ============================================================================
+
+plan-dev:
+  stage: plan-dev
+  environment:
+    name: development
+    url: https://192.168.1.181:6443
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - terraform/**/*
+        - .gitlab-ci.yml
+        - scripts/**/*
+  script:
+    # Setup SSH agent for Terraform Proxmox provider
+    - eval $(ssh-agent -s)
+    - ssh-add ~/.ssh/id_ed25519
+    - ssh-add -L
+
+    # Setup Devbox environment
+    - devbox shell --init
+
+    # Configure Terraform for Dev environment
+    - cd terraform
+    - cp terraform.tfvars.dev.example terraform.tfvars
+
+    # Run Terraform plan
+    - devbox run init
+    - devbox run plan
+    - ls -la plan.pln
+
+  variables:
+    TF_VAR_proxmox_endpoint: "https://192.168.1.5:8006/"
+    TF_VAR_proxmox_ssh_username: "root"
+    TF_VAR_talos_cluster_name: "talos-dev"
+    TF_VAR_cluster_vip: "192.168.1.181"
+
+  artifacts:
+    name: "terraform-plan-dev-$CI_MERGE_REQUEST_IID"
+    paths:
+      - terraform/plan.pln
+      - terraform/.terraform.lock.hcl
+    expire_in: 30 days
+    reports:
+      # GitLab can parse Terraform plan output
+      terraform: terraform/plan.pln
+
+  after_script:
+    - |
+      if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ]; then
+        echo "## 🏗️ Terraform Plan (Dev Environment)" > plan_comment.md
+        echo "" >> plan_comment.md
+        echo "**Environment:** Development" >> plan_comment.md
+        echo "**Cluster:** talos-dev" >> plan_comment.md
+        echo "**VIP:** 192.168.1.181" >> plan_comment.md
+        echo "" >> plan_comment.md
+        echo "Terraform plan completed successfully. Check job logs for details." >> plan_comment.md
+        echo "" >> plan_comment.md
+        echo "📊 **Plan Artifact:** [terraform-plan-dev-$CI_MERGE_REQUEST_IID](${CI_JOB_URL}/artifacts/browse)" >> plan_comment.md
+      fi
+
+# ============================================================================
+# Production Environment Deployment (Runs on main branch)
+# ============================================================================
+
+plan-prod:
+  stage: plan-dev
+  environment:
+    name: production
+    url: https://192.168.1.180:6443
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - terraform/**/*
+        - .gitlab-ci.yml
+        - scripts/**/*
+  script:
+    # Setup SSH agent for Terraform Proxmox provider
+    - eval $(ssh-agent -s)
+    - ssh-add ~/.ssh/id_ed25519
+    - ssh-add -L
+
+    # Setup Devbox environment
+    - devbox shell --init
+
+    # Configure Terraform for Prod environment
+    - cd terraform
+    - cp terraform.tfvars.prod.example terraform.tfvars
+
+    # Run Terraform plan
+    - devbox run init
+    - devbox run plan
+    - ls -la plan.pln
+
+  variables:
+    TF_VAR_proxmox_endpoint: "https://192.168.1.5:8006/"
+    TF_VAR_proxmox_ssh_username: "root"
+    TF_VAR_talos_cluster_name: "talos-prod"
+    TF_VAR_cluster_vip: "192.168.1.180"
+
+  artifacts:
+    name: "terraform-plan-prod-$CI_PIPELINE_ID"
+    paths:
+      - terraform/plan.pln
+      - terraform/.terraform.lock.hcl
+    expire_in: 30 days
+    reports:
+      terraform: terraform/plan.pln
+
+deploy-prod:
+  stage: deploy-prod
+  environment:
+    name: production
+    url: https://192.168.1.180:6443
+    action: start
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - terraform/**/*
+        - .gitlab-ci.yml
+        - scripts/**/*
+      when: manual  # Require manual approval for production deployments
+  dependencies:
+    - plan-prod
+  script:
+    # Setup SSH agent for Terraform Proxmox provider
+    - eval $(ssh-agent -s)
+    - ssh-add ~/.ssh/id_ed25519
+    - ssh-add -L
+
+    # Setup Devbox environment
+    - devbox shell --init
+
+    # Configure Terraform for Prod environment
+    - cd terraform
+    - cp terraform.tfvars.prod.example terraform.tfvars
+
+    # Apply the planned changes
+    - terraform apply plan.pln
+
+    # Extract cluster credentials
+    - terraform output -raw talos_config > ../talosconfig
+    - terraform output -raw kubeconfig > ../kubeconfig
+    - ls -la ../talosconfig ../kubeconfig
+
+    # Wait for cluster to be ready
+    - sleep 60
+
+    # Validate cluster health
+    - export TALOSCONFIG=../talosconfig
+    - export KUBECONFIG=../kubeconfig
+    - devbox run talosctl health --wait-timeout=5m
+    - devbox run kubectl get nodes
+    - devbox run kubectl get pods --all-namespaces
+
+  variables:
+    TF_VAR_proxmox_endpoint: "https://192.168.1.5:8006/"
+    TF_VAR_proxmox_ssh_username: "root"
+    TF_VAR_talos_cluster_name: "talos-prod"
+    TF_VAR_cluster_vip: "192.168.1.180"
+
+  artifacts:
+    name: "cluster-credentials-prod-$CI_PIPELINE_ID"
+    paths:
+      - talosconfig
+      - kubeconfig
+    expire_in: 7 days
+    reports:
+      # Generate deployment summary
+      dotenv: deploy.env
+
+  after_script:
+    - |
+      echo "DEPLOYMENT_STATUS=success" >> deploy.env
+      echo "DEPLOYMENT_TIME=$(date)" >> deploy.env
+      echo "CLUSTER_API=https://192.168.1.180:6443" >> deploy.env
+      echo ""
+      echo "## 🚀 Production Deployment Complete"
+      echo ""
+      echo "**Cluster:** talos-prod"
+      echo "**API Endpoint:** https://192.168.1.180:6443"
+      echo "**Deployment Time:** $(date)"
+      echo ""
+      echo "Cluster credentials available in job artifacts."
