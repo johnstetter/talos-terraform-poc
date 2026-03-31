@@ -1,6 +1,8 @@
 # Talos Kubernetes on Proxmox with Terraform
 
-This project deploys a Talos Linux Kubernetes cluster on Proxmox VE using Terraform. It follows the guide from [BBTech Systems](https://bbtechsystems.com/blog/k8s-with-pxe-tf) but uses API token authentication for improved security.
+[![GitLab](https://img.shields.io/badge/gitlab-stetter--homelab%2Ftalos--terraform--poc-orange?logo=gitlab)](https://gitlab.com/stetter-homelab/talos-terraform-poc)
+
+This project deploys a Talos Linux Kubernetes cluster on Proxmox VE using Terraform with GitLab CI/CD automation. It follows the guide from [BBTech Systems](https://bbtechsystems.com/blog/k8s-with-pxe-tf) but uses API token authentication and secure GitLab CI/CD for deployment automation.
 
 ## Prerequisites
 
@@ -52,10 +54,10 @@ Run the setup script on your Proxmox server to automatically create the user, ro
 
 ```bash
 # On your Proxmox server
-curl -fsSL https://raw.githubusercontent.com/johnstetter/talos-terraform-poc/main/scripts/setup-proxmox-permissions.sh | bash
+curl -fsSL https://gitlab.com/stetter-homelab/talos-terraform-poc/-/raw/main/scripts/setup-proxmox-permissions.sh | bash
 
 # Or clone the repo and run locally
-git clone https://github.com/johnstetter/talos-terraform-poc.git
+git clone https://gitlab.com/stetter-homelab/talos-terraform-poc.git
 cd talos-terraform-poc
 chmod +x scripts/setup-proxmox-permissions.sh
 ./scripts/setup-proxmox-permissions.sh
@@ -186,6 +188,22 @@ cluster_vip    = "10.0.0.100"     # VIP for API server
 service_subnet = "10.96.0.0/12"   # Kubernetes services
 pod_subnet     = "10.244.0.0/16"  # Kubernetes pods
 ```
+
+## GitLab CI/CD Automation
+
+This project includes secure GitLab CI/CD pipelines for automated deployment:
+
+### Pipeline Overview
+- **Development**: Automatic Terraform planning on merge requests
+- **Production**: Manual approval required for production deployments  
+- **Security**: External fork merge requests require approval before pipeline execution
+
+### Environments
+- **Dev Environment**: `talos-dev` @ 192.168.1.181 (1 control + 2 workers)
+- **Prod Environment**: `talos-prod` @ 192.168.1.180 (2 control + 3 workers)
+
+### Setup GitLab CI/CD
+See [GitLab CI/CD Setup Guide](docs/gitlab-ci-setup.md) for complete instructions.
 
 ## Management Scripts
 
