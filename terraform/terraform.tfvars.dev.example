@@ -1,0 +1,34 @@
+# Development Environment Configuration
+# Copy to terraform.tfvars and customize
+
+# Proxmox Configuration
+proxmox_endpoint     = "https://192.168.1.5:8006/"
+proxmox_api_token    = "terraform@pve!terraform=your-api-token-secret-here"
+proxmox_ssh_username = "root"
+proxmox_insecure     = true
+
+# Talos Cluster Configuration (Development)
+talos_cluster_name = "talos-dev"
+talos_version      = "1.9.5"
+kubernetes_version = "1.31.0"
+
+# Network Configuration (Development)
+cluster_vip    = "192.168.1.181"    # Dev cluster VIP
+cluster_domain = "cluster.local"
+service_subnet = "10.96.0.0/12"
+pod_subnet     = "10.244.0.0/16"
+
+# VM Configuration (Reduced for Dev)
+vm_cpu_cores  = 2                   # Lower CPU for dev
+vm_memory_mb  = 4096                # Lower RAM for dev
+vm_disk_size  = "30G"               # Smaller disks for dev
+
+# Node Configuration (Dev: 1 control + 2 workers)
+control_nodes = {
+  "dev-control-0" = "core"          # Single control node
+}
+
+worker_nodes = {
+  "dev-worker-0" = "core"           # Worker node 1
+  "dev-worker-1" = "core"           # Worker node 2
+}
