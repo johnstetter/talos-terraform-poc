@@ -1,0 +1,36 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.17.0/.schema/devbox.schema.json",
+  "packages": [
+    "terraform",
+    "kubernetes-helm",
+    "kubectl",
+    "talosctl"
+  ],
+  "shell": {
+    "init_hook": [
+      "echo 'Talos Terraform PoC DevBox Environment Loaded'",
+      "echo 'Available tools: terraform, helm (kubernetes-helm), kubectl, talosctl'"
+    ],
+    "scripts": {
+      "init": [
+        "cd terraform && terraform init"
+      ],
+      "plan": [
+        "cd terraform && terraform plan"
+      ],
+      "apply": [
+        "cd terraform && terraform apply"
+      ],
+      "destroy": [
+        "cd terraform && terraform destroy"
+      ],
+      "talos-config": [
+        "talosctl config"
+      ],
+      "k8s-status": [
+        "kubectl cluster-info",
+        "kubectl get nodes"
+      ]
+    }
+  }
+}
