@@ -52,10 +52,10 @@ Run the setup script on your Proxmox server to automatically create the user, ro
 
 ```bash
 # On your Proxmox server
-curl -fsSL https://raw.githubusercontent.com/johnstetter/talos-terraform-poc/main/scripts/setup-proxmox-permissions.sh | bash
+curl -fsSL https://gitlab.com/stetter-homelab/talos-terraform-poc/-/raw/main/scripts/setup-proxmox-permissions.sh | bash
 
 # Or clone the repo and run locally
-git clone https://github.com/johnstetter/talos-terraform-poc.git
+git clone https://gitlab.com/stetter-homelab/talos-terraform-poc.git
 cd talos-terraform-poc
 chmod +x scripts/setup-proxmox-permissions.sh
 ./scripts/setup-proxmox-permissions.sh
