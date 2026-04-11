@@ -5,7 +5,7 @@ proxmox_ssh_username = "root"
 proxmox_insecure     = true
 
 # Talos Cluster Configuration
-talos_cluster_name = "talos-homelab"
+talos_cluster_name = "talos-dev"
 talos_version      = "1.9.5"
 kubernetes_version = "1.31.0"
 
@@ -22,13 +22,13 @@ vm_disk_size  = "50G"
 
 # Node Configuration
 control_nodes = {
-  "control-0" = "pve1"
-  "control-1" = "pve1"
-  "control-2" = "pve1"
+  "talos-dev-control-01" = "pve1"
+  "talos-dev-control-02" = "pve1"
+  "talos-dev-control-03" = "pve1"
 }
 
 worker_nodes = {
-  "worker-0" = "pve1"
-  "worker-1" = "pve1"
-  "worker-2" = "pve1"
+  "talos-dev-worker-01" = "pve1"
+  "talos-dev-worker-02" = "pve1"
+  "talos-dev-worker-03" = "pve1"
 }

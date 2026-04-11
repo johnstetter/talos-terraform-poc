@@ -87,9 +87,9 @@ The Terraform module creates:
 Node mapping example:
 ```hcl
 control_nodes = {
-  "control-0" = "pve1"    # Deploy control-0 to pve1 host
-  "control-1" = "pve2"    # Deploy control-1 to pve2 host
-  "control-2" = "pve3"    # Deploy control-2 to pve3 host  
+  "talos-dev-control-01" = "pve1"    # Deploy talos-dev-control-01 to pve1 host
+  "talos-dev-control-02" = "pve2"    # Deploy talos-dev-control-02 to pve2 host
+  "talos-dev-control-03" = "pve3"    # Deploy talos-dev-control-03 to pve3 host  
 }
 ```
 

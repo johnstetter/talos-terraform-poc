@@ -29,7 +29,7 @@ variable "proxmox_ssh_username" {
 variable "talos_cluster_name" {
   description = "Name of the Talos cluster"
   type        = string
-  default     = "talos-homelab"
+  default     = "talos-dev"
 }
 
 variable "talos_version" {
@@ -50,9 +50,9 @@ variable "control_nodes" {
   description = "Map of control plane node names to Proxmox node assignments"
   type        = map(string)
   default = {
-    "control-0" = "pve1"
-    "control-1" = "pve1"
-    "control-2" = "pve1"
+    "talos-dev-control-01" = "pve1"
+    "talos-dev-control-02" = "pve1"
+    "talos-dev-control-03" = "pve1"
   }
 }
 
@@ -60,9 +60,9 @@ variable "worker_nodes" {
   description = "Map of worker node names to Proxmox node assignments"
   type        = map(string)
   default = {
-    "worker-0" = "pve1"
-    "worker-1" = "pve1"
-    "worker-2" = "pve1"
+    "talos-dev-worker-01" = "pve1"
+    "talos-dev-worker-02" = "pve1"
+    "talos-dev-worker-03" = "pve1"
   }
 }
 
