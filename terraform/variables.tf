@@ -21,7 +21,7 @@ variable "proxmox_api_token" {
 variable "proxmox_ssh_username" {
   description = "SSH username for connecting to Proxmox nodes (required for file operations)"
   type        = string
-  default     = "root"
+  default     = "stetter"
 }
 
 # Talos Cluster Configuration Variables

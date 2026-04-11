@@ -131,11 +131,40 @@ Provider authentication is handled via:
 
 ## Troubleshooting Context
 
-Common failure points:
+### SSH Authentication Issues
+
+The Proxmox provider requires SSH access for file operations during VM creation. Common SSH-related errors:
+
+**Error**: `unable to authenticate user "X" over SSH... no supported methods remain`
+
+**Solutions**:
+1. **Load SSH Keys**: Ensure your SSH key is loaded in the SSH agent:
+   ```bash
+   # Check loaded keys
+   ssh-add -L
+   
+   # Load default SSH key if none are loaded
+   ssh-add ~/.ssh/id_ed25519
+   
+   # Verify connectivity
+   ssh stetter@<proxmox-host> "echo 'SSH works'"
+   ```
+
+2. **Verify SSH Configuration**: Test manual SSH connection to your Proxmox host:
+   ```bash
+   ssh stetter@192.168.1.5 "whoami"  # Should return 'stetter'
+   ```
+
+3. **Check SSH Username**: The `proxmox_ssh_username` variable must match a user that:
+   - Has SSH key access to Proxmox hosts
+   - Has sudo privileges for file operations
+   - Default is "stetter" (can be overridden in terraform.tfvars)
+
+### Other Common Issues
+
 1. **API Token Issues**: Verify format and permissions in Proxmox
-2. **SSH Connectivity**: Ensure SSH key is loaded and accessible to Proxmox hosts
-3. **Module Downloads**: Run `devbox run init` if module not found
-4. **Resource Conflicts**: Check Proxmox resource availability (CPU, memory, storage)
+2. **Module Downloads**: Run `devbox run init` if module not found
+3. **Resource Conflicts**: Check Proxmox resource availability (CPU, memory, storage)
 
 Debug mode: `export TF_LOG=DEBUG` before terraform commands.
 

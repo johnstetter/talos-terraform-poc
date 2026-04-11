@@ -1,7 +1,7 @@
 # Proxmox Configuration
 proxmox_endpoint     = "https://your-proxmox.example.com:8006/"
 proxmox_api_token    = "terraform@pve!terraform-token=your-api-token-secret-here"
-proxmox_ssh_username = "root"
+proxmox_ssh_username = "stetter"
 proxmox_insecure     = true
 
 # Talos Cluster Configuration
